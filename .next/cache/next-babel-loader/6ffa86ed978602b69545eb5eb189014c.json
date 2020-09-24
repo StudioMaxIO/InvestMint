@@ -1,0 +1,1 @@
+{"ast":null,"code":"// KEEP THIS FILE LOCAL, DO NOT SYNC WITH PROJECT.\nvar credentials = {\n  DEPLOY_WALLET_PHRASE: \"\",\n  INFURA_API: \"https://kovan.infura.io/v3/501646d7b9b145b4b7336b25d934fc36\"\n};\nmodule.exports = credentials;","map":null,"metadata":{},"sourceType":"script"}

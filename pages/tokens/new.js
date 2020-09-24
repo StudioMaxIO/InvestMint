@@ -10,7 +10,6 @@ import {
   Table
 } from "semantic-ui-react";
 import Layout from "../../components/Layout";
-import tokenMintFactory from "../../ethereum/tokenMintFactory";
 import web3 from "../../ethereum/web3";
 import { Router } from "../../routes";
 
@@ -170,7 +169,7 @@ class TokenMintNew extends Component {
 
     try {
       const accounts = await web3.eth.getAccounts();
-      await tokenMintFactory.methods
+      /*await tokenMintFactory.methods
         .createToken(
           this.state.tokenName,
           this.state.tokenSymbol,
@@ -179,7 +178,7 @@ class TokenMintNew extends Component {
         )
         .send({
           from: accounts[0]
-        });
+        });*/
 
       Router.pushRoute("/funding");
     } catch (err) {

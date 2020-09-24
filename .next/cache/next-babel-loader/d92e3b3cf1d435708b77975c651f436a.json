@@ -1,0 +1,1 @@
+{"ast":null,"code":"var routes = require(\"next-routes\")();\n\nroutes.add(\"/dashboard\", \"/\").add(\"/create\", \"tokens/new\").add(\"/t/:address\", \"/tokens/show\").add(\"/wallet\", \"/load-wallet\").add(\"/mint\", \"/load-mint\").add(\"/t/:address/wallet\", \"/tokens/wallet\");\nmodule.exports = routes;","map":null,"metadata":{},"sourceType":"script"}

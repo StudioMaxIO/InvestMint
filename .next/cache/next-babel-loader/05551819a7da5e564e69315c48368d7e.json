@@ -1,0 +1,1 @@
+{"ast":null,"code":"var profile = {\n  COMPANY_NAME: \"InvestMint\",\n  COMPANY_DESCRIPTION: \"A Mintable Fundraising Token for No-Loss Investments\"\n};\nmodule.exports = profile;","map":null,"metadata":{},"sourceType":"script"}
