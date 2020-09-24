@@ -1,5 +1,8 @@
 import Web3 from "web3";
 //const credentials = require("../settings/credentials");
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
 
 let web3;
 
@@ -9,9 +12,7 @@ if (typeof window !== "undefined" && typeof window.web3 !== "undefined") {
   window.ethereum.enable();
 } else {
   // on the server or user is not running metamask
-  const provider = new Web3.providers.HttpProvider(
-    "https://kovan.infura.io/v3/501646d7b9b145b4b7336b25d934fc36"
-  );
+  const provider = new Web3.providers.HttpProvider(process.env.INFURA_API);
   web3 = new Web3(provider);
 }
 
