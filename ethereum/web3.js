@@ -1,5 +1,5 @@
 import Web3 from "web3";
-const credentials = require("../settings/credentials");
+//const credentials = require("../settings/credentials");
 
 let web3;
 
