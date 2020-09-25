@@ -223,21 +223,29 @@ class TokenShow extends Component {
     this.setState({ reserveBlockLoading: false });
   };
 
-  sellTokens = async event => {
-    event.preventDefault();
-
-    this.setState({ sellTokensLoading: true, sellTokensErrorMessage: "" });
-    this.setState({ sellTokensLoading: false });
-  };
-
-  transferTokens = async event => {
+  purchaseBlock = async event => {
     event.preventDefault();
 
     this.setState({
-      transferTokensLoading: true,
-      transferTokensErrorMessage: ""
+      purchaseBlockLoading: true,
+      purchaseBlockErrorMessage: ""
     });
-    this.setState({ transferTokensLoading: false });
+
+    const investMintToken = InvestMint(this.props.address);
+
+    try {
+      const accounts = await web3.eth.getAccounts();
+      await investMintToken.methods.purchaseBlock().send({
+        from: accounts[0],
+        value: this.state.activeReservationCost
+      });
+      //window.location.reload(false);
+      const walletUrl = "/t/" + this.props.address + "/wallet";
+      window.location.assign(walletUrl);
+    } catch (err) {
+      this.setState({ purchaseTokenErrorMessage: err.message });
+    }
+    this.setState({ purchaseBlockLoading: false });
   };
 
   render() {

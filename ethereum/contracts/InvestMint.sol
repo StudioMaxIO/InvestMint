@@ -2,7 +2,6 @@ pragma solidity ^0.6.2;
 
 import "https://github.com/smartcontractkit/chainlink/evm-contracts/src/v0.6/ChainlinkClient.sol";
 import "https://github.com/smartcontractkit/chainlink/evm-contracts/src/v0.6/vendor/Ownable.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/SafeMath.sol";
 import "./SMToken.sol";
 
 contract InvestMint is Token, ChainlinkClient, Ownable {
@@ -29,10 +28,10 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
     // this provides lowest known # blocks reeserved, updated when reservations are updated
     uint public blocksReserved = 0;
 
-    uint[] private _claimedReservations;
-    uint private _currentID = 0;
-    uint private _totalReservations = 0;
-    uint private _maxVerifiedID = 0;
+    uint[] public _claimedReservations;
+    uint public _currentID = 0;
+    uint public _totalReservations = 0;
+    uint public _maxVerifiedID = 0;
 
     uint public nextUpdate = 0;
     uint public canceledTasksAvailable = 0;
@@ -41,7 +40,7 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
 
     //Must authorize contract to spend LINK tokens for user in order to make reservation
     uint public reservationFee = 1 * (10**18); // Reservation Fee in LINK
-    uint public expirationPeriod = 10 minutes;
+    uint public expirationPeriod = 2 minutes;
 
     uint public tokensPerBlock = 1000 * (10**18);
 
@@ -210,6 +209,10 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
         return adjustedValue;
     }
 
+    function addToPool() public payable {
+        vPool += msg.value;
+    }
+
     function addToVPool(uint weiValue) internal {
         vPool += weiValue;
     }
@@ -242,9 +245,6 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
 
         // reservation isn't expired
         require(res.expiration > now, "Reservation is expired.");
-
-        // sender is buyer
-        require(res.buyerAddress == msg.sender);
 
         // sender sent enough to cover cost of reservation
         require(msg.value >= res.cost);
@@ -308,11 +308,12 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
         }
     }
 
-    function updateReservations(uint maxUpdateID) public {
-        uint maxUpdate = maxUpdateID == 0 ? _totalReservations+1 : maxUpdateID+1;
-        for (uint i = _maxVerifiedID + 1; i < maxUpdate; i++){
+    function updateReservations() public {
+        //uint maxUpdate = maxUpdateID == 0 ? _totalReservations : maxUpdateID + 1;
+        for (uint i = _maxVerifiedID + 1; i < _totalReservations + 1; i++){
             Reservation storage r = reservations[i];
             if(r.status == ReservationStatus.claimed) {
+
                 if (!r.finalized){
                     _claimedReservations.push(r.id);
                     if(r.purchasedID > _claimedReservations.length) {
@@ -327,20 +328,19 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
                         if (newCost < originalCost) {
                             uint difference = originalCost - newCost;
                             r.cost = newCost;
-                            assert(address(this).balance >= difference);
-                            r.buyerAddress.transfer(difference);
-                            pendingPool -= difference;
+                            if(address(this).balance > difference){
+                                r.buyerAddress.transfer(difference);
+                            }
                         }
-
-                        r.finalized = true;
-
-                        //Tokens are minted and available at user's address
-                        _mint(r.buyerAddress, tokensPerBlock);
-                        if(pendingPool >= r.cost) {
-                            pendingPool -= r.cost;
-                        }
-                        _maxVerifiedID = r.id;
                     }
+                    r.finalized = true;
+
+                    //Tokens are minted and available at user's address
+                    _mint(r.buyerAddress, tokensPerBlock);
+                    if(pendingPool >= r.cost) {
+                        pendingPool -= r.cost;
+                    }
+                    _maxVerifiedID = r.id;
                 }
             } else if(r.status == ReservationStatus.open) {
                 // should not update past reservations that are open unless expired
@@ -356,10 +356,8 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
                     _maxVerifiedID = r.id;
                     expiredTasksAvailable++;
                     updateReservationsAfterDelay(60);
-                    break;
-                } else {
-                    break;
                 }
+                return;
             } else if(r.status == ReservationStatus.canceled) {
                 if (!r.finalized) {
                     removeFromVSupply(tokensPerBlock);
@@ -378,7 +376,7 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
                     _maxVerifiedID = r.id;
                     expiredTasksAvailable++;
                     updateReservationsAfterDelay(60);
-                    break;
+                    return;
                 }
             }
         }
@@ -393,6 +391,6 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
 
     function updateExpiredReservations(bytes32 _requestId) public recordChainlinkFulfillment(_requestId){
         updateReservationCalls += 1;
-        updateReservations(0);
+        updateReservations();
     }
 }
