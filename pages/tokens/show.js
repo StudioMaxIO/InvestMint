@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Form, Button, Input, Message, Grid } from "semantic-ui-react";
+import { Form, Button, Input, Message, Grid, Card } from "semantic-ui-react";
 import Layout from "../../components/Layout";
 import InvestMint from "../../ethereum/investMint";
 import Token from "../../ethereum/token";
@@ -30,10 +30,9 @@ class TokenShow extends Component {
       address: props.query.address,
       tokenName: summary[0],
       tokenSymbol: summary[1],
-      userBalance: "2004.110",
-      exchangeRate: "10000503000000000",
-      blockCost: "1000000000023400000",
-      tokensPerBlock: "1000"
+      exchangeRate: summary[4],
+      blockCost: summary[3],
+      tokensPerBlock: summary[2]
     };
   }
 
@@ -47,10 +46,10 @@ class TokenShow extends Component {
   }
 
   async checkAuthorization() {
+    const linkToken = Token("0xa36085f69e2889c224210f603d836748e7dc0088");
     const accounts = await web3.eth.getAccounts();
 
     if (accounts[0]) {
-      const linkToken = Token("0xa36085f69e2889c224210f603d836748e7dc0088");
       const authorization = await linkToken.methods
         .allowance(accounts[0], this.props.address)
         .call();
@@ -63,6 +62,28 @@ class TokenShow extends Component {
 
   authorizeReservation = async event => {
     event.preventDefault();
+  };
+
+  authorizeLink = async event => {
+    event.preventDefault();
+
+    this.setState({ reserveBlockLoading: true, reserveBlockErrorMessage: "" });
+    const linkToken = Token("0xa36085f69e2889c224210f603d836748e7dc0088");
+
+    try {
+      const accounts = await web3.eth.getAccounts();
+      const approvalAmount = "10000000000000000000";
+      await linkToken.methods.approve(this.props.address, approvalAmount).send({
+        from: accounts[0]
+      });
+      // const reloadRoute = "/t/" + this.props.address;
+      // Router.pushRoute(reloadRoute);
+      //checkAuthorization();
+      window.location.reload(false);
+    } catch (err) {
+      this.setState({ reserveTokenErrorMessage: err.message });
+    }
+    this.setState({ reserveBlockLoading: false });
   };
 
   reserveTokenBlock = async event => {
@@ -115,42 +136,68 @@ class TokenShow extends Component {
         <Grid>
           <Grid.Row>
             <Grid.Column>
-              <h1>
-                {this.props.tokenName} | {this.props.tokenSymbol}
-              </h1>
-            </Grid.Column>
-          </Grid.Row>
-          <Grid.Row>
-            <Grid.Column>
               <center>
-                <h2>Mint Tokens:</h2>
-                <h3>
-                  <strong>Block Cost:</strong>{" "}
-                  {web3.utils.fromWei(this.props.blockCost, "ether")} Ether
-                </h3>
-                <h3>
-                  <strong>Tokens per Block:</strong> {this.props.tokensPerBlock}{" "}
-                  {this.props.tokenSymbol}
-                </h3>
-                <Form
-                  onSubmit={
-                    this.state.isAuthorized
-                      ? this.reserveTokenBlock
-                      : this.authorizeReservation
-                  }
-                  error={!!this.state.reserveBlockErrorMessage}
+                <Card
+                  style={{
+                    padding: "10px",
+                    textAlign: "left",
+                    fontSize: "18px"
+                  }}
                 >
-                  <Message
-                    error
-                    header="Oops!"
-                    content={this.state.reserveBlockErrorMessage}
-                  />
-                  <Button loading={this.state.reserveBlockLoading} color="teal">
-                    {this.state.isAuthorized
-                      ? "Reserve Block"
-                      : "Authorize LINK"}
-                  </Button>
-                </Form>
+                  <h2
+                    style={{
+                      textAlign: "center"
+                    }}
+                  >
+                    {this.props.tokenName} | {this.props.tokenSymbol}
+                  </h2>
+                  <p
+                    style={{
+                      textAlign: "center",
+                      fontSize: "18px"
+                    }}
+                  >
+                    1 {this.props.tokenSymbol} = {this.props.exchangeRate} ETH
+                  </p>
+                  <p>
+                    <strong>Current Block Cost: </strong>
+                    <br />
+                    {web3.utils.fromWei(this.props.blockCost, "ether")} Ether
+                  </p>
+                  <p>
+                    <strong>Tokens per Block:</strong> <br />
+                    {web3.utils.fromWei(
+                      this.props.tokensPerBlock,
+                      "ether"
+                    )}{" "}
+                    {this.props.tokenSymbol}
+                  </p>
+                  <Form
+                    onSubmit={
+                      this.state.isAuthorized
+                        ? this.reserveTokenBlock
+                        : this.authorizeLink
+                    }
+                    error={!!this.state.reserveBlockErrorMessage}
+                  >
+                    <Message
+                      error
+                      header="Oops!"
+                      content={this.state.reserveBlockErrorMessage}
+                    />
+                    <center>
+                      <Button
+                        size="large"
+                        loading={this.state.reserveBlockLoading}
+                        color="teal"
+                      >
+                        {this.state.isAuthorized
+                          ? "Reserve Block"
+                          : "Authorize LINK"}
+                      </Button>
+                    </center>
+                  </Form>
+                </Card>
               </center>
             </Grid.Column>
           </Grid.Row>

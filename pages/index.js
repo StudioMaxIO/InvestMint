@@ -61,7 +61,7 @@ class Dashboard extends Component {
             <Grid.Column>
               <center>
                 <Form onSubmit={this.onSubmit}>
-                  <Form.Field>
+                  <Form.Field width={10}>
                     <Input
                       placeholder="InvestMint Token Address: 0x..."
                       value={this.state.tokenAddress}
@@ -70,7 +70,11 @@ class Dashboard extends Component {
                       }
                     />
                   </Form.Field>
-                  <Button color="teal" loading={this.state.sellTokensLoading}>
+                  <Button
+                    size="large"
+                    color="teal"
+                    loading={this.state.sellTokensLoading}
+                  >
                     Launch Mint
                   </Button>
                 </Form>

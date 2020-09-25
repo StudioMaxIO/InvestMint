@@ -34,9 +34,10 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
     uint public _totalReservations = 0;
     uint public _maxVerifiedID = 0;
 
-    uint nextUpdate = 0;
-    uint canceledTasksAvailable = 0;
-    uint expiredTasksAvailable = 0;
+    uint public nextUpdate = 0;
+    uint public canceledTasksAvailable = 0;
+    uint public expiredTasksAvailable = 0;
+    uint public pendingPool = 0;
 
     //Must authorize contract to spend LINK tokens for user in order to make reservation
     uint public reservationFee = 1 * (10**18); // Reservation Fee in LINK
@@ -99,8 +100,11 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
         return (Token(linkTokenAddress).allowance(msg.sender, address(this)) >= reservationFee);
     }
 
-    function getSummary() public view returns (string memory, string memory, uint) {
-        return (_name, _symbol, Token(linkTokenAddress).allowance(msg.sender, address(this)));
+    function getSummary() public view returns (string memory, string memory, uint, uint, uint) {
+        // name, symbol, tokensPerBlock, currentBlockCost
+        uint cost = getCostOfReservation();
+        uint tokenValue = getTokenValue();
+        return (_name, _symbol, tokensPerBlock, cost, tokenValue);
     }
 
     function reserveBlock() public {
@@ -125,9 +129,7 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
 
     function createReservation() internal {
         _currentID++;
-        uint currentTokenCost = getVTokenCost(18);
-        uint currentFee = getMintFee(blocksReserved + 1);
-        uint totalCost = (currentTokenCost * (tokensPerBlock / (10**18))) + currentFee;
+        uint totalCost = getCostOfReservation();
         Reservation memory newReservation = Reservation ({
             id: _currentID,
             purchasedID: blocksReserved + 1,
@@ -143,6 +145,13 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
         addToVSupply(tokensPerBlock);
         blocksReserved++;
         _totalReservations++;
+    }
+
+    function getCostOfReservation() public view returns(uint) {
+        uint currentTokenCost = getVTokenCost(18);
+        uint currentFee = getMintFee(blocksReserved + 1);
+        uint totalCost = (currentTokenCost * (tokensPerBlock / (10**18))) + currentFee;
+        return totalCost;
     }
 
     function getMintFee(uint numBlocks) public view returns(uint) {
@@ -184,6 +193,16 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
             adjustedVCost = vPool * (10 ** decimals) / vSupply;
         }
         return adjustedVCost;
+    }
+
+    function getTokenValue() public view returns(uint) {
+        uint adjustedValue = 0;
+        if (_totalSupply != 0) {
+            if (address(this).balance > pendingPool) {
+                adjustedValue = (address(this).balance - pendingPool) * (10**18) / _totalSupply;
+            }
+        }
+        return adjustedValue;
     }
 
     function addToVPool(uint weiValue) internal {
@@ -229,6 +248,10 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
         res.status = ReservationStatus.claimed;
         delete _activeReservation[msg.sender];
         //_purchasedReservations.push(res.id);
+        pendingPool += res.cost;
+        if(res.cost < msg.value) {
+            msg.sender.transfer(msg.value - res.cost);
+        }
 
         if (nextUpdate < res.expiration) {
             updateReservationsAfterDelay(expirationPeriod);
@@ -297,15 +320,20 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
                         uint finalFee = getMintFee(r.purchasedID);
                         uint newCost = (currentTokenCost * (tokensPerBlock / (10**18))) + finalFee;
                         if (newCost < originalCost) {
+                            uint difference = originalCost - newCost;
                             r.cost = newCost;
-                            assert(address(this).balance >= (originalCost - newCost));
-                            r.buyerAddress.transfer(originalCost - newCost);
+                            assert(address(this).balance >= difference);
+                            r.buyerAddress.transfer(difference);
+                            pendingPool -= difference;
                         }
 
                         r.finalized = true;
 
                         //Tokens are minted and available at user's address
                         _mint(r.buyerAddress, tokensPerBlock);
+                        if(pendingPool >= r.cost) {
+                            pendingPool -= r.cost;
+                        }
                         _maxVerifiedID = r.id;
                     }
                 }

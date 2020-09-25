@@ -1,8 +1,8 @@
 import Web3 from "web3";
 //const credentials = require("../settings/credentials");
-if (process.env.NODE_ENV !== "production") {
-  require("dotenv").config();
-}
+// if (process.env.NODE_ENV !== "production") {
+//   require("dotenv").config();
+// }
 
 let web3;
 
