@@ -279,7 +279,8 @@ class TokenShow extends Component {
                         fontSize: "18px"
                       }}
                     >
-                      1 {this.props.tokenSymbol} = {this.props.exchangeRate} ETH
+                      1 {this.props.tokenSymbol} ={" "}
+                      {web3.utils.fromWei(this.props.exchangeRate, "ether")} ETH
                     </p>
                     <p>
                       <strong>Current Block Cost: </strong>
@@ -353,7 +354,8 @@ class TokenShow extends Component {
                         fontSize: "18px"
                       }}
                     >
-                      1 {this.props.tokenSymbol} = {this.props.exchangeRate} ETH
+                      1 {this.props.tokenSymbol} ={" "}
+                      {web3.utils.fromwei(this.props.exchangeRate, "ether")} ETH
                     </p>
                     <p>
                       <strong>Reserved Block Cost: </strong>
