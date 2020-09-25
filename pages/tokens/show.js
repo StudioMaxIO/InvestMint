@@ -15,7 +15,8 @@ class TokenShow extends Component {
     tokensToSell: "",
     tokensToTransfer: "",
     transferToAddress: "",
-    isAuthorized: false
+    isAuthorized: false,
+    activeReservation: ""
   };
 
   static async getInitialProps(props) {
@@ -56,13 +57,10 @@ class TokenShow extends Component {
 
       if (authorization >= 1 * (10 ^ 18)) {
         this._isMounted && this.setState({ isAuthorized: true });
+        this.getReservation();
       }
     }
   }
-
-  authorizeReservation = async event => {
-    event.preventDefault();
-  };
 
   authorizeLink = async event => {
     event.preventDefault();
@@ -86,29 +84,45 @@ class TokenShow extends Component {
     this.setState({ reserveBlockLoading: false });
   };
 
+  async getReservation() {
+    const investMintToken = InvestMint(this.props.address);
+    const accounts = await web3.eth.getAccounts();
+    if (accounts[0]) {
+      const activeReservation = await investMintToken.methods
+        .getActiveReservation()
+        .call({ from: accounts[0] });
+
+      this._isMounted &&
+        this.setState({ activeReservation: activeReservation });
+    }
+    if (this.state.activeReservation == 0) {
+      console.log("No current reservations.");
+    } else {
+      if (this.state.activeReservation != "") {
+        console.log("Has reservation: ", this.state.activeReservation);
+        const walletUrl = "/t/" + this.props.address + "/wallet";
+        window.location.assign(walletUrl);
+      }
+    }
+  }
+
   reserveTokenBlock = async event => {
     event.preventDefault();
+    console.log("Reserve Token Block...");
 
     this.setState({ reserveBlockLoading: true, reserveBlockErrorMessage: "" });
+    const investMintToken = InvestMint(this.props.address);
 
-    // try {
-    //   const accounts = await web3.eth.getAccounts();
-    //   await tokenFactory.methods
-    //     .createToken(
-    //       this.state.tokenName,
-    //       this.state.tokenSymbol,
-    //       this.state.wholeTokens,
-    //       this.state.decimals
-    //     )
-    //     .send({
-    //       from: accounts[0]
-    //     });
-    //
-    //   Router.pushRoute("/funding");
-    // } catch (err) {
-    //   this.setState({ reserveTokenErrorMessage: err.message });
-    // }
-
+    try {
+      const accounts = await web3.eth.getAccounts();
+      await investMintToken.methods.reserveBlock().send({
+        from: accounts[0]
+      });
+      const walletUrl = "/t/" + this.props.address + "/wallet";
+      window.location.assign(walletUrl);
+    } catch (err) {
+      this.setState({ reserveTokenErrorMessage: err.message });
+    }
     this.setState({ reserveBlockLoading: false });
   };
 

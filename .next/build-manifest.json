@@ -23,6 +23,10 @@
     "/tokens/show": [
       "static/runtime/webpack.js",
       "static/runtime/main.js"
+    ],
+    "/tokens/wallet": [
+      "static/runtime/webpack.js",
+      "static/runtime/main.js"
     ]
   }
 }
