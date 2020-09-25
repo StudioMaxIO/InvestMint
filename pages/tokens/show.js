@@ -355,7 +355,7 @@ class TokenShow extends Component {
                       }}
                     >
                       1 {this.props.tokenSymbol} ={" "}
-                      {web3.utils.fromwei(this.props.exchangeRate, "ether")} ETH
+                      {web3.utils.fromWei(this.props.exchangeRate, "ether")} ETH
                     </p>
                     <p>
                       <strong>Reserved Block Cost: </strong>
