@@ -29,10 +29,10 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
     // this provides lowest known # blocks reeserved, updated when reservations are updated
     uint public blocksReserved = 0;
 
-    uint[] public _claimedReservations;
-    uint public _currentID = 0;
-    uint public _totalReservations = 0;
-    uint public _maxVerifiedID = 0;
+    uint[] private _claimedReservations;
+    uint private _currentID = 0;
+    uint private _totalReservations = 0;
+    uint private _maxVerifiedID = 0;
 
     uint public nextUpdate = 0;
     uint public canceledTasksAvailable = 0;
@@ -105,6 +105,11 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
         uint cost = getCostOfReservation();
         uint tokenValue = getTokenValue();
         return (_name, _symbol, tokensPerBlock, cost, tokenValue);
+    }
+
+    function getReservationSummary(uint reservationID) public view returns(uint256, ReservationStatus, uint256, uint256, bool){
+        Reservation memory r = reservations[reservationID];
+        return (r.id, r.status, r.cost, r.expiration, r.finalized);
     }
 
     function reserveBlock() public {

@@ -10,13 +10,21 @@ class TokenShow extends Component {
   state = {
     reserveBlockErrorMessage: "",
     sellTokensErrorMessage: "",
+    purchaseBlockErrorMessage: "",
+    cancelBlockErrorMessage: "",
     reserveBlockLoading: false,
     sellTokensLoading: false,
+    purchaseBlockLoading: false,
+    cancelBlockLoading: false,
     tokensToSell: "",
     tokensToTransfer: "",
     transferToAddress: "",
     isAuthorized: false,
-    activeReservation: ""
+    activeReservation: "",
+    activeReservationStatus: "",
+    activeReservationCost: "",
+    activeReservationExpiration: "",
+    activeReservationFinalized: false
   };
 
   static async getInitialProps(props) {
@@ -97,12 +105,100 @@ class TokenShow extends Component {
     }
     if (this.state.activeReservation == 0) {
       console.log("No current reservations.");
-    } else {
-      if (this.state.activeReservation != "") {
-        console.log("Has reservation: ", this.state.activeReservation);
-        const walletUrl = "/t/" + this.props.address + "/wallet";
-        window.location.assign(walletUrl);
+    } else if (this.state.activeReservation != "") {
+      console.log("Has reservation: ", this.state.activeReservation);
+      const reservationSummary = await investMintToken.methods
+        .getReservationSummary(this.state.activeReservation)
+        .call();
+      this.setState({
+        activeReservationCost: reservationSummary[2],
+        activeReservationFinalized: reservationSummary[4]
+      });
+      switch (reservationSummary[1]) {
+        case "0":
+          this.setState({ activeReservationStatus: "open" });
+          break;
+        case "1":
+          this.setState({ activeReservationStatus: "claimed" });
+          break;
+        case "2":
+          this.setState({ activeReservationStatus: "canceled" });
+          break;
+        case "3":
+          this.setState({ activeReservationStatus: "expired" });
+          break;
+        default:
+          this.setState({ activeReservationStatus: "unknown" });
       }
+      let reservationTimestamp = reservationSummary[3];
+
+      var ts = new Date(reservationTimestamp * 1000);
+      var months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ];
+      var hours = [
+        "12",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ];
+      var ampm = ts.getHours() < 12 ? "AM" : "PM";
+      var year = ts.getFullYear();
+      var month = months[ts.getMonth()];
+      var date = ts.getDate();
+      var hour = hours[ts.getHours()];
+      var min = "0" + ts.getMinutes();
+      var sec = "0" + ts.getSeconds();
+      var formattedDateTime =
+        month +
+        " " +
+        date +
+        " " +
+        year +
+        " " +
+        hour +
+        ":" +
+        min.substr(-2) +
+        ":" +
+        sec.substr(-2) +
+        " " +
+        ampm;
+      this.setState({ activeReservationExpiration: formattedDateTime });
+      //window.location.reload(false);
+      //const walletUrl = "/t/" + this.props.address + "/wallet";
+      //window.location.assign(walletUrl);
+    } else {
     }
   }
 
@@ -118,8 +214,9 @@ class TokenShow extends Component {
       await investMintToken.methods.reserveBlock().send({
         from: accounts[0]
       });
-      const walletUrl = "/t/" + this.props.address + "/wallet";
-      window.location.assign(walletUrl);
+      window.location.reload(false);
+      //const walletUrl = "/t/" + this.props.address + "/wallet";
+      //window.location.assign(walletUrl);
     } catch (err) {
       this.setState({ reserveTokenErrorMessage: err.message });
     }
@@ -144,80 +241,182 @@ class TokenShow extends Component {
   };
 
   render() {
-    //this.checkAuthorization();
-    return (
-      <Layout page="funding">
-        <Grid>
-          <Grid.Row>
-            <Grid.Column>
-              <center>
-                <Card
-                  style={{
-                    padding: "10px",
-                    textAlign: "left",
-                    fontSize: "18px"
-                  }}
-                >
-                  <h2
+    if (
+      this.state.activeReservation == "" ||
+      this.state.activeReservation == 0
+    ) {
+      return (
+        <Layout page="funding">
+          <Grid>
+            <Grid.Row>
+              <Grid.Column>
+                <center>
+                  <Card
                     style={{
-                      textAlign: "center"
-                    }}
-                  >
-                    {this.props.tokenName} | {this.props.tokenSymbol}
-                  </h2>
-                  <p
-                    style={{
-                      textAlign: "center",
+                      padding: "10px",
+                      textAlign: "left",
                       fontSize: "18px"
                     }}
                   >
-                    1 {this.props.tokenSymbol} = {this.props.exchangeRate} ETH
-                  </p>
-                  <p>
-                    <strong>Current Block Cost: </strong>
-                    <br />
-                    {web3.utils.fromWei(this.props.blockCost, "ether")} Ether
-                  </p>
-                  <p>
-                    <strong>Tokens per Block:</strong> <br />
-                    {web3.utils.fromWei(
-                      this.props.tokensPerBlock,
-                      "ether"
-                    )}{" "}
-                    {this.props.tokenSymbol}
-                  </p>
-                  <Form
-                    onSubmit={
-                      this.state.isAuthorized
-                        ? this.reserveTokenBlock
-                        : this.authorizeLink
-                    }
-                    error={!!this.state.reserveBlockErrorMessage}
+                    <h2
+                      style={{
+                        textAlign: "center"
+                      }}
+                    >
+                      {this.props.tokenName} | {this.props.tokenSymbol}
+                    </h2>
+                    <p
+                      style={{
+                        textAlign: "center",
+                        fontSize: "18px"
+                      }}
+                    >
+                      1 {this.props.tokenSymbol} = {this.props.exchangeRate} ETH
+                    </p>
+                    <p>
+                      <strong>Current Block Cost: </strong>
+                      <br />
+                      {web3.utils.fromWei(this.props.blockCost, "ether")} Ether
+                    </p>
+                    <p>
+                      <strong>Tokens per Block:</strong> <br />
+                      {web3.utils.fromWei(
+                        this.props.tokensPerBlock,
+                        "ether"
+                      )}{" "}
+                      {this.props.tokenSymbol}
+                    </p>
+                    <Form
+                      onSubmit={
+                        this.state.isAuthorized
+                          ? this.reserveTokenBlock
+                          : this.authorizeLink
+                      }
+                      error={!!this.state.reserveBlockErrorMessage}
+                    >
+                      <Message
+                        error
+                        header="Oops!"
+                        content={this.state.reserveBlockErrorMessage}
+                      />
+                      <center>
+                        <Button
+                          size="large"
+                          loading={this.state.reserveBlockLoading}
+                          color="teal"
+                        >
+                          {this.state.isAuthorized
+                            ? "Reserve Block"
+                            : "Authorize LINK"}
+                        </Button>
+                      </center>
+                    </Form>
+                  </Card>
+                </center>
+              </Grid.Column>
+            </Grid.Row>
+          </Grid>
+        </Layout>
+      );
+    } else {
+      return (
+        <Layout page="funding">
+          <Grid>
+            <Grid.Row>
+              <Grid.Column>
+                <center>
+                  <Card
+                    style={{
+                      padding: "10px",
+                      textAlign: "left",
+                      fontSize: "18px"
+                    }}
                   >
-                    <Message
-                      error
-                      header="Oops!"
-                      content={this.state.reserveBlockErrorMessage}
-                    />
-                    <center>
-                      <Button
-                        size="large"
-                        loading={this.state.reserveBlockLoading}
-                        color="teal"
-                      >
-                        {this.state.isAuthorized
-                          ? "Reserve Block"
-                          : "Authorize LINK"}
-                      </Button>
-                    </center>
-                  </Form>
-                </Card>
-              </center>
-            </Grid.Column>
-          </Grid.Row>
-        </Grid>
-      </Layout>
-    );
+                    <h2
+                      style={{
+                        textAlign: "center"
+                      }}
+                    >
+                      {this.props.tokenName} | {this.props.tokenSymbol}
+                    </h2>
+                    <p
+                      style={{
+                        textAlign: "center",
+                        fontSize: "18px"
+                      }}
+                    >
+                      1 {this.props.tokenSymbol} = {this.props.exchangeRate} ETH
+                    </p>
+                    <p>
+                      <strong>Reserved Block Cost: </strong>
+                      <br />
+                      {web3.utils.fromWei(
+                        this.state.activeReservationCost,
+                        "ether"
+                      )}{" "}
+                      Ether
+                    </p>
+                    <p>
+                      <strong>Block Expiration: </strong>
+                      <br />
+                      {this.state.activeReservationExpiration}
+                    </p>
+                    <p>
+                      <strong>Block Status: </strong>
+                      <br />
+                      {this.state.activeReservationStatus}
+                    </p>
+                    <p>
+                      <strong>Tokens per Block:</strong> <br />
+                      {web3.utils.fromWei(
+                        this.props.tokensPerBlock,
+                        "ether"
+                      )}{" "}
+                      {this.props.tokenSymbol}
+                    </p>
+                    <Form
+                      onSubmit={this.purchaseBlock}
+                      error={!!this.state.purchaseBlockErrorMessage}
+                    >
+                      <Message
+                        error
+                        header="Oops!"
+                        content={this.state.purchaseBlockErrorMessage}
+                      />
+                      <center>
+                        <Button
+                          size="large"
+                          loading={this.state.purchaseBlockLoading}
+                          color="teal"
+                        >
+                          {" "}
+                          Purchase Block
+                        </Button>
+                        <br />
+                      </center>
+                    </Form>
+
+                    <Form>
+                      <center>
+                        <Button
+                          style={{ marginTop: "10px" }}
+                          size="large"
+                          loading={this.state.cancelBlockLoading}
+                          color="red"
+                        >
+                          {" "}
+                          Cancel Reservation
+                        </Button>
+                      </center>
+                    </Form>
+                  </Card>
+                </center>
+              </Grid.Column>
+            </Grid.Row>
+          </Grid>
+        </Layout>
+      );
+    }
   }
 }
 
