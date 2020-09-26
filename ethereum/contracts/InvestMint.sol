@@ -55,6 +55,10 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
     uint public mintFeeValue2 = 1000;
     Operand public mintFeeOperand = Operand.divide;
 
+    //TESTING VARIABLES
+    uint public a_originalCost;
+    uint public a_newCost;
+
     // Kovan
     bytes32 jobID = "a7ab70d561d34eb49e9b1612fd2e044b";
     address oracleAddress = 0x2f90A6D021db21e1B2A077c5a37B3C7E75D15b7e;
@@ -320,11 +324,23 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
                         // update to open reservation
                         r.purchasedID = _claimedReservations.length;
 
-                        // refund difference
+                        // remove existing "purchase" from vpool / vsupply
+                        removeFromVPool(r.cost);
+                        removeFromVSupply(tokensPerBlock);
+
                         uint originalCost = r.cost;
                         uint currentTokenCost = getVTokenCost(18);
                         uint finalFee = getMintFee(r.purchasedID);
                         uint newCost = (currentTokenCost * (tokensPerBlock / (10**18))) + finalFee;
+
+                        a_originalCost = originalCost;
+                        a_newCost = newCost;
+
+                        // update vPool / vSupply to new values
+                        addToVPool(newCost);
+                        addToVSupply(tokensPerBlock);
+
+                        // refund difference
                         if (newCost < originalCost) {
                             uint difference = originalCost - newCost;
                             r.cost = newCost;
