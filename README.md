@@ -15,3 +15,5 @@ Once an InvestMint token contract has been created, anyone with the address can 
 Reservation Fee of 1 LINK is required to reserve block of coins. Up to the full reservation fee will be refunded once the block is purchased. Half of the reservation fee may be kept in the contract depending on how many existing LINK remain in the contract at the time of purchase.
 
 This current version of InvestMint is only on the Kovan test network. While this is a functioning contract and dApp, it has not been audited for security and is only a proof of concept at this stage.
+
+To run locally, clone project and "npm run dev" from the root directory. A live test version can be accessed at http://investmint.herokuapp.com
