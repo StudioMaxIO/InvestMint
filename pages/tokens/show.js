@@ -6,19 +6,14 @@ import Token from "../../ethereum/token";
 import web3 from "../../ethereum/web3";
 import { Router } from "../../routes";
 
-class TokenShow extends Component {
+class InvestMintShow extends Component {
   state = {
     reserveBlockErrorMessage: "",
-    sellTokensErrorMessage: "",
     purchaseBlockErrorMessage: "",
     cancelBlockErrorMessage: "",
     reserveBlockLoading: false,
-    sellTokensLoading: false,
     purchaseBlockLoading: false,
     cancelBlockLoading: false,
-    tokensToSell: "",
-    tokensToTransfer: "",
-    transferToAddress: "",
     isAuthorized: false,
     activeReservation: "",
     activeReservationStatus: "",
@@ -214,7 +209,7 @@ class TokenShow extends Component {
       await investMintToken.methods.reserveBlock().send({
         from: accounts[0]
       });
-      window.location.reload(false);
+      //window.location.reload(false);
       //const walletUrl = "/t/" + this.props.address + "/wallet";
       //window.location.assign(walletUrl);
     } catch (err) {
@@ -243,18 +238,43 @@ class TokenShow extends Component {
       const walletUrl = "/t/" + this.props.address + "/wallet";
       window.location.assign(walletUrl);
     } catch (err) {
-      this.setState({ purchaseTokenErrorMessage: err.message });
+      this.setState({ purchaseBlockErrorMessage: err.message });
     }
     this.setState({ purchaseBlockLoading: false });
+  };
+
+  cancelBlock = async event => {
+    event.preventDefault();
+
+    this.setState({
+      cancelBlockLoading: true,
+      cancelBlockErrorMessage: ""
+    });
+
+    const investMintToken = InvestMint(this.props.address);
+
+    try {
+      const accounts = await web3.eth.getAccounts();
+      await investMintToken.methods.cancelBlock().send({
+        from: accounts[0]
+      });
+      //const walletUrl = "/t/" + this.props.address + "/wallet";
+      //window.location.assign(walletUrl);
+    } catch (err) {
+      this.setState({ cancelBlockErrorMessage: err.message });
+    }
+    this.setState({ cancelBlockLoading: false });
+    window.location.reload(false);
   };
 
   render() {
     if (
       this.state.activeReservation == "" ||
-      this.state.activeReservation == 0
+      this.state.activeReservation == 0 ||
+      this.state.activeReservationStatus == "expired"
     ) {
       return (
-        <Layout page="funding">
+        <Layout page="mint">
           <Grid>
             <Grid.Row>
               <Grid.Column>
@@ -329,7 +349,7 @@ class TokenShow extends Component {
       );
     } else {
       return (
-        <Layout page="funding">
+        <Layout page="mint">
           <Grid>
             <Grid.Row>
               <Grid.Column>
@@ -430,4 +450,4 @@ class TokenShow extends Component {
   }
 }
 
-export default TokenShow;
+export default InvestMintShow;
