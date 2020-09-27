@@ -216,6 +216,7 @@ class InvestMintShow extends Component {
       this.setState({ reserveTokenErrorMessage: err.message });
     }
     this.setState({ reserveBlockLoading: false });
+    window.location.reload(false);
   };
 
   purchaseBlock = async event => {
@@ -235,12 +236,12 @@ class InvestMintShow extends Component {
         value: this.state.activeReservationCost
       });
       //window.location.reload(false);
-      const walletUrl = "/t/" + this.props.address + "/wallet";
-      window.location.assign(walletUrl);
     } catch (err) {
       this.setState({ purchaseBlockErrorMessage: err.message });
     }
     this.setState({ purchaseBlockLoading: false });
+    const walletUrl = "/t/" + this.props.address + "/wallet";
+    window.location.assign(walletUrl);
   };
 
   cancelBlock = async event => {
@@ -330,7 +331,7 @@ class InvestMintShow extends Component {
                       />
                       <center>
                         <Button
-                          size="large"
+                          size="huge"
                           loading={this.state.reserveBlockLoading}
                           color="teal"
                         >
@@ -415,7 +416,7 @@ class InvestMintShow extends Component {
                       />
                       <center>
                         <Button
-                          size="large"
+                          size="huge"
                           loading={this.state.purchaseBlockLoading}
                           color="teal"
                         >
@@ -426,7 +427,7 @@ class InvestMintShow extends Component {
                       </center>
                     </Form>
 
-                    <Form>
+                    <Form onSubmit={this.cancelBlock}>
                       <center>
                         <Button
                           style={{ marginTop: "10px" }}

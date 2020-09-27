@@ -3,7 +3,7 @@ import { Form, Button, Input, Message, Grid, Card } from "semantic-ui-react";
 import Layout from "../../components/Layout";
 import web3 from "../../ethereum/web3";
 import InvestMint from "../../ethereum/investMint";
-import { Router } from "../../routes";
+import { Router, Link } from "../../routes";
 
 class TokenWallet extends Component {
   state = {
@@ -151,7 +151,7 @@ class TokenWallet extends Component {
                     />
                     <center>
                       <Button
-                        size="large"
+                        size="huge"
                         loading={this.state.exchangeTokensLoading}
                         color="teal"
                       >
@@ -160,6 +160,17 @@ class TokenWallet extends Component {
                     </center>
                   </Form>
                 </Card>
+              </center>
+            </Grid.Column>
+          </Grid.Row>
+          <Grid.Row>
+            <Grid.Column>
+              <center>
+                <Link route={"/t/" + this.props.address}>
+                  <strong>
+                    <a href="">Mint More {this.props.tokenSymbol}</a>
+                  </strong>
+                </Link>
               </center>
             </Grid.Column>
           </Grid.Row>

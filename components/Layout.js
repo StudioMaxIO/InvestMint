@@ -14,6 +14,18 @@ export default props => {
       </Head>
       <Header page={props.page ? props.page : "dashboard"} />
       {props.children}
+      <footer stye={{ bottom: 0 }}>
+        <center>
+          <br />
+          <br />
+          <br />
+          <br />
+          <br />
+          Fund This Project
+          <br />
+          <strong>investmint.eth</strong>
+        </center>
+      </footer>
     </Container>
   );
 };

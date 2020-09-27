@@ -20,11 +20,15 @@
     "/_polyfills": [
       "static/runtime/polyfills.js"
     ],
-    "/tokens/new": [
+    "/load-mint": [
       "static/runtime/webpack.js",
       "static/runtime/main.js"
     ],
-    "/tokens/show": [
+    "/load-wallet": [
+      "static/runtime/webpack.js",
+      "static/runtime/main.js"
+    ],
+    "/tokens/new": [
       "static/runtime/webpack.js",
       "static/runtime/main.js"
     ]

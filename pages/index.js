@@ -71,7 +71,7 @@ class Dashboard extends Component {
                     />
                   </Form.Field>
                   <Button
-                    size="large"
+                    size="huge"
                     color="teal"
                     loading={this.state.sellTokensLoading}
                   >

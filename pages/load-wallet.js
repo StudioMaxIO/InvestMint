@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Form, Button, Input, Message, Grid } from "semantic-ui-react";
+import { Form, Button, Input, Message, Grid, Card } from "semantic-ui-react";
 import Layout from "../components/Layout";
 import web3 from "../ethereum/web3";
 import { Router } from "../routes";
@@ -22,25 +22,39 @@ class WalletLoader extends Component {
         <Grid>
           <Grid.Row>
             <Grid.Column>
-              <h2>InvestMint Wallet</h2>
-            </Grid.Column>
-          </Grid.Row>
-          <Grid.Row>
-            <Grid.Column width={10}>
-              <Form onSubmit={this.onSubmit}>
-                <Form.Field>
-                  <Input
-                    placeholder="InvestMint Token Address: 0x..."
-                    value={this.state.tokenAddress}
-                    onChange={event =>
-                      this.setState({ tokenAddress: event.target.value })
-                    }
-                  />
-                </Form.Field>
-                <Button color="teal" loading={this.state.sellTokensLoading}>
-                  Launch Wallet
-                </Button>
-              </Form>
+              <center>
+                <Card
+                  fluid
+                  style={{
+                    paddingTop: "10px",
+                    paddingBottom: "20px",
+                    paddingLeft: "40px",
+                    paddingRight: "40px"
+                  }}
+                >
+                  <center>
+                    <h1>Wallet</h1>
+                    <Form onSubmit={this.onSubmit}>
+                      <Form.Field>
+                        <Input
+                          placeholder="InvestMint Token Address: 0x..."
+                          value={this.state.tokenAddress}
+                          onChange={event =>
+                            this.setState({ tokenAddress: event.target.value })
+                          }
+                        />
+                      </Form.Field>
+                      <Button
+                        size="huge"
+                        color="teal"
+                        loading={this.state.sellTokensLoading}
+                      >
+                        Launch Wallet
+                      </Button>
+                    </Form>
+                  </center>
+                </Card>
+              </center>
             </Grid.Column>
           </Grid.Row>
         </Grid>

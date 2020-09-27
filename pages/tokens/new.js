@@ -92,7 +92,14 @@ class InvestMintNew extends Component {
                     fontSize: "18px"
                   }}
                 >
-                  <h2>Create New InvestMint Token</h2>
+                  <h1>
+                    <center>
+                      Create{" "}
+                      {this.state.tokenName
+                        ? "New Token: " + this.state.tokenName
+                        : "New Token"}
+                    </center>
+                  </h1>
                   <Form
                     onSubmit={this.onSubmit}
                     error={!!this.state.errorMessage}
