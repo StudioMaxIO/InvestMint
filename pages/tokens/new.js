@@ -27,6 +27,8 @@ class InvestMintNew extends Component {
     blockPricingInput2: "1000",
     blockPricingOperand: "/",
     stableMintFee: "0.1",
+    expirationPeriod: "24",
+    expirationUnit: "hours",
     loading: false
   };
 
@@ -36,21 +38,38 @@ class InvestMintNew extends Component {
     this.setState({ loading: true, errorMessage: "" });
 
     try {
+      let expirationTime = this.state.expirationPeriod;
+      switch (this.state.expirationUnit) {
+        case "hours":
+          expirationTime = this.state.expirationPeriod * 60 * 60;
+          break;
+        case "minutes":
+          expirationTime = this.state.expirationPeriod * 60;
+          break;
+        default:
+          break;
+      }
       const accounts = await web3.eth.getAccounts();
-      newToken = await investMintFactory.methods
+      const newToken = await investMintFactory.methods
         .createToken(
           this.state.tokenName,
           this.state.tokenSymbol,
-          this.state.blockPricingInput1,
+          this.state.blockPricingInput1 == "#"
+            ? "0"
+            : this.state.blockPricingInput1,
           this.state.blockPricingOperand,
-          this.state.blockPricingInput2,
+          this.state.blockPricingInput2 == "#"
+            ? "0"
+            : this.state.blockPricingInput2,
           this.state.blocksToStabilize,
           web3.utils.toWei(this.state.stableMintFee, "ether"),
-          web3.utils.toWei(this.state.tokensPerBlock, "ether")
+          web3.utils.toWei(this.state.tokensPerBlock, "ether"),
+          expirationTime
         )
         .send({ from: accounts[0] });
-      const tokenUrl = "/t/" + newToken;
-      window.location.assign(walletUrl);
+
+      const tokenUrl = "/t/" + newToken.events[0].address;
+      window.location.assign(tokenUrl);
     } catch (err) {
       this.setState({ errorMessage: err.message });
     }
@@ -80,7 +99,7 @@ class InvestMintNew extends Component {
                   >
                     <Form.Group widths="equal">
                       <Form.Field>
-                        <label>Token Name</label>
+                        <label>Token Name:</label>
                         <Input
                           value={this.state.tokenName}
                           onChange={event =>
@@ -91,7 +110,7 @@ class InvestMintNew extends Component {
                     </Form.Group>
                     <Form.Group widths="equal">
                       <Form.Field>
-                        <label>Token Symbol</label>
+                        <label>Token Symbol:</label>
                         <Input
                           value={this.state.tokenSymbol}
                           onChange={event =>
@@ -156,7 +175,7 @@ class InvestMintNew extends Component {
                           })
                         }
                       >
-                        <option value="#">Number of Blocks</option>
+                        <option value="#">Number of Blocks:</option>
                         <option value="0.5">0.5</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
@@ -190,7 +209,7 @@ class InvestMintNew extends Component {
                     </Form.Group>
                     <Form.Group widths="equal">
                       <Form.Field>
-                        <label>Tokens Per Block</label>
+                        <label>Tokens Per Block:</label>
                         <Input
                           value={this.state.tokensPerBlock}
                           onChange={event =>
@@ -201,7 +220,7 @@ class InvestMintNew extends Component {
                         />
                       </Form.Field>
                       <Form.Field>
-                        <label>Blocks to Stabilize</label>
+                        <label>Blocks to Stabilize:</label>
                         <Input
                           value={this.state.blocksToStabilize}
                           onChange={event =>
@@ -212,7 +231,7 @@ class InvestMintNew extends Component {
                         />
                       </Form.Field>
                       <Form.Field>
-                        <label>Stable Mint Fee</label>
+                        <label>Stable Mint Fee:</label>
                         <Input
                           value={this.state.stableMintFee}
                           onChange={event =>
@@ -221,13 +240,43 @@ class InvestMintNew extends Component {
                         />
                       </Form.Field>
                     </Form.Group>
+                    <Form.Group inline>
+                      <Form.Field>
+                        <label>Reservation Expiration:</label>
+                        <Input
+                          value={this.state.expirationPeriod}
+                          onChange={event =>
+                            this.setState({
+                              expirationPeriod: event.target.value
+                            })
+                          }
+                        />
+                      </Form.Field>
+                      <Form.Field
+                        control="select"
+                        value={this.state.expirationUnit}
+                        onChange={event =>
+                          this.setState({
+                            expirationUnit: event.target.value
+                          })
+                        }
+                      >
+                        <option value="hours">Hours</option>
+                        <option value="minutes">Minutes</option>
+                        <option value="seconds">Seconds</option>
+                      </Form.Field>
+                    </Form.Group>
                     <Message
                       error
                       header="Oops!"
                       content={this.state.errorMessage}
                     />
                     <center>
-                      <Button size="huge" color="teal">
+                      <Button
+                        size="huge"
+                        color="teal"
+                        loading={this.state.loading}
+                      >
                         Create{" "}
                         {this.state.tokenSymbol
                           ? this.state.tokenSymbol

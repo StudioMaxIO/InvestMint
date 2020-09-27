@@ -51,12 +51,12 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
 
     uint oraclePayment = (1 * (10**18)) / 2;
 
-    uint public mintFeeValue1 = 0; // 0 represents # of current block
-    uint public mintFeeValue2 = 1000; // Represents Ether, not wei (remember to adjust in calculations)
-    Operand public mintFeeOperand = Operand.divide;
+    uint private _mintFeeValue1 = 0; // 0 represents # of current block
+    uint private _mintFeeValue2 = 1000; // Represents Ether, not wei (remember to adjust in calculations)
+    Operand private _mintFeeOperand = Operand.divide;
 
     uint private _blocksToStabilize = 0;
-    uint private _stableMintFee = 0;
+    uint public _stableMintFee = 0;
 
     //TESTING VARIABLES
 
@@ -71,25 +71,26 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
     //address linkTokenAddress = 0xa36085F69e2889c224210F603D836748e7dC0088;
 
 
-    constructor(string memory tokenName, string memory tokenSymbol, uint mintFeeV1, string memory operand, uint mintFeeV2, uint blocksToStabilize, uint stableMintFee, uint tokensInBlock ) Token(tokenName, tokenSymbol, 0, 18) public {
+    constructor(string memory tokenName, string memory tokenSymbol, uint mintFeeV1, string memory operand, uint mintFeeV2, uint blocksToStabilize, uint stableMintFee, uint tokensInBlock, uint expiration ) Token(tokenName, tokenSymbol, 0, 18) public {
         setPublicChainlinkToken();
 
-        mintFeeValue1 = mintFeeV1;
-        mintFeeValue2 = mintFeeV2;
+        _mintFeeValue1 = mintFeeV1;
+        _mintFeeValue2 = mintFeeV2;
         tokensPerBlock = tokensInBlock;
+        expirationPeriod = expiration;
 
         // set operand
         bytes32 hashedOperand = keccak256(abi.encodePacked(operand));
         if(hashedOperand == keccak256(abi.encodePacked("*"))){
-            mintFeeOperand = Operand.multiply;
+            _mintFeeOperand = Operand.multiply;
         } else if (hashedOperand == keccak256(abi.encodePacked("/"))){
-            mintFeeOperand = Operand.divide;
+            _mintFeeOperand = Operand.divide;
         } else if (hashedOperand == keccak256(abi.encodePacked("^"))){
-            mintFeeOperand = Operand.power;
+            _mintFeeOperand = Operand.power;
         } else if (hashedOperand == keccak256(abi.encodePacked("+"))){
-            mintFeeOperand = Operand.add;
+            _mintFeeOperand = Operand.add;
         } else if (hashedOperand == keccak256(abi.encodePacked("-"))){
-            mintFeeOperand == Operand.subtract;
+            _mintFeeOperand == Operand.subtract;
         }
 
         _blocksToStabilize = blocksToStabilize;
@@ -179,27 +180,27 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
         // returns highest possible mint fee
         // fee will be reduced / refunded if any previous reservations cancel / expire
         uint fee = 0;
-        uint v1 = mintFeeValue1;
-        uint v2 = mintFeeValue2;
+        uint v1 = _mintFeeValue1;
+        uint v2 = _mintFeeValue2;
 
-        if (mintFeeValue1 == 0) {
+        if (_mintFeeValue1 == 0) {
             v1 = numBlocks;
         }
 
-        if (mintFeeValue2 == 0) {
+        if (_mintFeeValue2 == 0) {
             v2 = numBlocks;
         }
 
         // v1 * v2 stored as ether values, fees converted to wei here
-        if (mintFeeOperand == Operand.multiply) {
+        if (_mintFeeOperand == Operand.multiply) {
             fee = (v1 * v2) * (10 ** 18);
-        } else if (mintFeeOperand == Operand.divide) {
+        } else if (_mintFeeOperand == Operand.divide) {
             fee = ((v1*(10 ** 18)) / v2);
-        } else if (mintFeeOperand == Operand.power) {
+        } else if (_mintFeeOperand == Operand.power) {
             fee = (v1 ** v2) * (10 ** 18);
-        } else if (mintFeeOperand == Operand.add) {
+        } else if (_mintFeeOperand == Operand.add) {
             fee = (v1 + v2) * (10 ** 18);
-        } else if (mintFeeOperand == Operand.subtract) {
+        } else if (_mintFeeOperand == Operand.subtract) {
             if (v1 >= v2) {
                 fee = (v1 - v2) * (10 ** 18);
             }
@@ -436,8 +437,8 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
 contract InvestMintFactory{
     address[] public tokens;
 
-    function createToken(string memory name, string memory symbol, uint mintFeeV1, string memory operand, uint mintFeeV2, uint blocksToStabilize, uint stableMintFee, uint tokensInBlock) public returns(address){
-        address newToken = address(new InvestMint (name, symbol, mintFeeV1, operand, mintFeeV2, blocksToStabilize, stableMintFee, tokensInBlock));
+    function createToken(string memory name, string memory symbol, uint mintFeeV1, string memory operand, uint mintFeeV2, uint blocksToStabilize, uint stableMintFee, uint tokensInBlock, uint expiration) public returns(address){
+        address newToken = address(new InvestMint (name, symbol, mintFeeV1, operand, mintFeeV2, blocksToStabilize, stableMintFee, tokensInBlock, expiration));
         tokens.push(newToken);
         return newToken;
     }
