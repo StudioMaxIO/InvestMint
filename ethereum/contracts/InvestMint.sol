@@ -22,32 +22,30 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
 
     mapping(address => uint) public linkBalance;
 
-    uint public vPool = 0;
-    uint public vSupply = 0;
+    uint private _vPool = 0;
+    uint private _vSupply = 0;
 
     // this provides lowest known # blocks reeserved, updated when reservations are updated
-    uint public blocksReserved = 0;
+    uint private _blocksReserved = 0;
 
-    uint[] public _claimedReservations;
-    uint public _currentID = 0;
-    uint public _totalReservations = 0;
-    uint public _maxVerifiedID = 0;
+    uint[] private _claimedReservations;
+    uint private _currentID = 0;
+    uint private _totalReservations = 0;
+    uint private _maxVerifiedID = 0;
 
-    uint public nextUpdate = 0;
-    uint public canceledTasksAvailable = 0;
-    uint public expiredTasksAvailable = 0;
-    uint public pendingPool = 0;
+    uint private _nextUpdate = 0;
+    uint private _canceledTasksAvailable = 0;
+    uint private _expiredTasksAvailable = 0;
+    uint private _pendingPool = 0;
 
     //Must authorize contract to spend LINK tokens for user in order to make reservation
     uint public reservationFee = 1 * (10**18); // Reservation Fee in LINK
-    uint public expirationPeriod = 2 minutes;
+    uint public expirationPeriod = 24 hours;
 
     uint public tokensPerBlock = 1000 * (10**18);
 
-    mapping(uint => Reservation) public reservations;
+    mapping(uint => Reservation) private _reservations;
     mapping(address => uint) private _activeReservation;
-
-    uint public updateReservationCalls = 0;
 
     uint oraclePayment = (1 * (10**18)) / 2;
 
@@ -121,7 +119,7 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
     }
 
     function getReservationSummary(uint reservationID) public view returns(uint256, ReservationStatus, uint256, uint256, bool){
-        Reservation memory r = reservations[reservationID];
+        Reservation memory r = _reservations[reservationID];
         ReservationStatus s = r.status;
         if (r.expiration < now) {
             s = ReservationStatus.expired;
@@ -131,7 +129,7 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
 
     function reserveBlock() public {
         // check for existing reservation
-        require((reservations[_activeReservation[msg.sender]].expiration < now) || (_activeReservation[msg.sender] == 0));
+        require((_reservations[_activeReservation[msg.sender]].expiration < now) || (_activeReservation[msg.sender] == 0));
 
         Token linkToken = Token(linkTokenAddress);
 
@@ -154,55 +152,55 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
         uint totalCost = getCostOfReservation();
         Reservation memory newReservation = Reservation ({
             id: _currentID,
-            purchasedID: blocksReserved + 1,
+            purchasedID: _blocksReserved + 1,
             buyerAddress: msg.sender,
             status: ReservationStatus.open,
             cost: totalCost,
             expiration: now + expirationPeriod,
             finalized: false
         });
-        reservations[newReservation.id] = newReservation;
+        _reservations[newReservation.id] = newReservation;
         _activeReservation[msg.sender] = newReservation.id;
         addToVPool(totalCost);
         addToVSupply(tokensPerBlock);
-        blocksReserved++;
+        _blocksReserved++;
         _totalReservations++;
     }
 
     function getCostOfReservation() public view returns(uint) {
         uint currentTokenCost = getVTokenCost(18);
-        uint currentFee = getMintFee(blocksReserved + 1);
+        uint currentFee = getMintFee(_blocksReserved + 1);
         uint totalCost = (currentTokenCost * (tokensPerBlock / (10**18))) + currentFee;
         return totalCost;
     }
 
     function getMintFee(uint numBlocks) public view returns(uint) {
-        // returns highest possible mint fee
-        // fee will be reduced / refunded if any previous reservations cancel / expire
-        uint fee = 0;
-        uint v1 = _mintFeeValue1;
-        uint v2 = _mintFeeValue2;
+        uint fee = _stableMintFee;
+        if(numBlocks < _blocksToStabilize) {
+            uint v1 = _mintFeeValue1;
+            uint v2 = _mintFeeValue2;
 
-        if (_mintFeeValue1 == 0) {
-            v1 = numBlocks;
-        }
+            if (_mintFeeValue1 == 0) {
+                v1 = numBlocks;
+            }
 
-        if (_mintFeeValue2 == 0) {
-            v2 = numBlocks;
-        }
+            if (_mintFeeValue2 == 0) {
+                v2 = numBlocks;
+            }
 
-        // v1 * v2 stored as ether values, fees converted to wei here
-        if (_mintFeeOperand == Operand.multiply) {
-            fee = (v1 * v2) * (10 ** 18);
-        } else if (_mintFeeOperand == Operand.divide) {
-            fee = ((v1*(10 ** 18)) / v2);
-        } else if (_mintFeeOperand == Operand.power) {
-            fee = (v1 ** v2) * (10 ** 18);
-        } else if (_mintFeeOperand == Operand.add) {
-            fee = (v1 + v2) * (10 ** 18);
-        } else if (_mintFeeOperand == Operand.subtract) {
-            if (v1 >= v2) {
-                fee = (v1 - v2) * (10 ** 18);
+            // v1 * v2 stored as ether values, fees converted to wei here
+            if (_mintFeeOperand == Operand.multiply) {
+                fee = (v1 * v2) * (10 ** 18);
+            } else if (_mintFeeOperand == Operand.divide) {
+                fee = ((v1*(10 ** 18)) / v2);
+            } else if (_mintFeeOperand == Operand.power) {
+                fee = (v1 ** v2) * (10 ** 18);
+            } else if (_mintFeeOperand == Operand.add) {
+                fee = (v1 + v2) * (10 ** 18);
+            } else if (_mintFeeOperand == Operand.subtract) {
+                if (v1 >= v2) {
+                    fee = (v1 - v2) * (10 ** 18);
+                }
             }
         }
 
@@ -211,8 +209,8 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
 
     function getVTokenCost(uint decimals) public view returns(uint) {
         uint adjustedVCost = 0;
-        if (vSupply != 0) {
-            adjustedVCost = vPool * (10 ** decimals) / vSupply;
+        if (_vSupply != 0) {
+            adjustedVCost = _vPool * (10 ** decimals) / _vSupply;
         }
         return adjustedVCost;
     }
@@ -220,43 +218,43 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
     function getTokenValue() public view returns(uint) {
         uint adjustedValue = 0;
         if (_totalSupply != 0) {
-            if (address(this).balance > pendingPool) {
-                adjustedValue = (address(this).balance - pendingPool) * (10**18) / _totalSupply;
+            if (address(this).balance > _pendingPool) {
+                adjustedValue = (address(this).balance - _pendingPool) * (10**18) / _totalSupply;
             }
         }
         return adjustedValue;
     }
 
     function addToPool() public payable {
-        vPool += msg.value;
+        _vPool += msg.value;
     }
 
     function addToVPool(uint weiValue) internal {
-        vPool += weiValue;
+        _vPool += weiValue;
     }
 
     function addToVSupply(uint numTokens) internal {
-        vSupply += numTokens;
+        _vSupply += numTokens;
     }
 
     function removeFromVPool(uint weiValue) internal {
-        if (vPool >= weiValue) {
-            vPool -= weiValue;
+        if (_vPool >= weiValue) {
+            _vPool -= weiValue;
         } else {
-            vPool = 0;
+            _vPool = 0;
         }
     }
 
     function removeFromVSupply(uint numTokens) internal {
-        if (vSupply >= numTokens) {
-            vSupply -= numTokens;
+        if (_vSupply >= numTokens) {
+            _vSupply -= numTokens;
         } else {
-            vSupply = 0;
+            _vSupply = 0;
         }
     }
 
     function purchaseBlock() public payable{
-        Reservation storage res = reservations[_activeReservation[msg.sender]];
+        Reservation storage res = _reservations[_activeReservation[msg.sender]];
 
         // reservation is open
         require(res.status == ReservationStatus.open);
@@ -271,21 +269,21 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
         res.status = ReservationStatus.claimed;
         delete _activeReservation[msg.sender];
         //_purchasedReservations.push(res.id);
-        pendingPool += res.cost;
+        _pendingPool += res.cost;
         if(res.cost < msg.value) {
             msg.sender.transfer(msg.value - res.cost);
         }
 
-        if (nextUpdate < res.expiration) {
+        if (_nextUpdate < res.expiration) {
             updateReservationsAfterDelay(expirationPeriod);
-            nextUpdate = now + expirationPeriod;
+            _nextUpdate = now + expirationPeriod;
 
         // Use canceled or expired task credit if available
-            if (canceledTasksAvailable >= 1) {
-                canceledTasksAvailable--;
+            if (_canceledTasksAvailable >= 1) {
+                _canceledTasksAvailable--;
                 refundFullReservationFee();
-            } else if (expiredTasksAvailable >= 1) {
-                expiredTasksAvailable--;
+            } else if (_expiredTasksAvailable >= 1) {
+                _expiredTasksAvailable--;
                 refundFullReservationFee();
             } else {
                 refundPartialReservationFee();
@@ -296,7 +294,7 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
     }
 
     function cancelBlock() public {
-        Reservation storage res = reservations[_activeReservation[msg.sender]];
+        Reservation storage res = _reservations[_activeReservation[msg.sender]];
 
         // only cancel open reservations
         require(res.status == ReservationStatus.open);
@@ -310,7 +308,7 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
 
         refundPartialReservationFee();
 
-        canceledTasksAvailable++;
+        _canceledTasksAvailable++;
     }
 
     function refundFullReservationFee() internal {
@@ -329,13 +327,13 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
     function updateReservations() public {
         //uint maxUpdate = maxUpdateID == 0 ? _totalReservations : maxUpdateID + 1;
         for (uint i = _maxVerifiedID + 1; i < _totalReservations + 1; i++){
-            Reservation storage r = reservations[i];
+            Reservation storage r = _reservations[i];
             if(r.status == ReservationStatus.claimed) {
 
                 if (!r.finalized){
                     _claimedReservations.push(r.id);
-                    if(pendingPool >= r.cost) {
-                        pendingPool -= r.cost;
+                    if(_pendingPool >= r.cost) {
+                        _pendingPool -= r.cost;
                     }
                     if(r.purchasedID > _claimedReservations.length) {
                         // update to open reservation
@@ -349,7 +347,7 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
                         uint currentTokenCost = getVTokenCost(18);
                         uint finalFee = getMintFee(r.purchasedID);
                         uint newCost = (currentTokenCost * (tokensPerBlock / (10**18))) + finalFee;
-                        blocksReserved--;
+                        _blocksReserved--;
                         // update vPool / vSupply to new values
                         addToVPool(newCost);
                         addToVSupply(tokensPerBlock);
@@ -377,11 +375,11 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
                     // handle expired reservation
                     removeFromVSupply(tokensPerBlock);
                     removeFromVPool(r.cost);
-                    blocksReserved--;
+                    _blocksReserved--;
                     r.finalized = true;
                     delete _activeReservation[r.buyerAddress];
                     _maxVerifiedID = r.id;
-                    expiredTasksAvailable++;
+                    _expiredTasksAvailable++;
                     updateReservationsAfterDelay(60);
                 }
                 return;
@@ -389,7 +387,7 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
                 if (!r.finalized) {
                     removeFromVSupply(tokensPerBlock);
                     removeFromVPool(r.cost);
-                    blocksReserved--;
+                    _blocksReserved--;
                     r.finalized = true;
                     _maxVerifiedID = r.id;
                 }
@@ -397,12 +395,12 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
                 if (!r.finalized) {
                     removeFromVSupply(tokensPerBlock);
                     removeFromVPool(r.cost);
-                    blocksReserved--;
+                    _blocksReserved--;
                     r.finalized = true;
                     delete _activeReservation[r.buyerAddress];
                     _maxVerifiedID = r.id;
-                    expiredTasksAvailable++;
-                    updateReservationsAfterDelay(30);
+                    _expiredTasksAvailable++;
+                    updateReservationsAfterDelay(1);
                     return;
                 }
             }
@@ -428,7 +426,6 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
     }
 
     function updateExpiredReservations(bytes32 _requestId) public recordChainlinkFulfillment(_requestId){
-        updateReservationCalls += 1;
         updateReservations();
     }
 }
