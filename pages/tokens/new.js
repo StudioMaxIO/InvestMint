@@ -126,9 +126,11 @@ class InvestMintNew extends Component {
                         />
                       </Form.Field>
                     </Form.Group>
+                    <p style={{ fontSize: "13px" }}>
+                      <strong>Mint Fee Pricing:</strong>
+                    </p>
                     <Form.Group inline>
                       <Form.Field
-                        label="Mint Fee Pricing:"
                         control="select"
                         value={this.state.blockPricingInput1}
                         onChange={event =>
