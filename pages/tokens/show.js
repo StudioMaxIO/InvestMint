@@ -45,7 +45,7 @@ class TokenShow extends Component {
     };
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     this._isMounted = true;
     this._isMounted && this.checkAuthorization();
   }

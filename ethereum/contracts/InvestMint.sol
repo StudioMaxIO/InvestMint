@@ -398,7 +398,7 @@ contract InvestMint is Token, ChainlinkClient, Ownable {
         require(_balances[msg.sender] >= amount);
         // update vpool / vsupply
         uint tokenValue = getTokenValue();
-        uint ev = tokenValue * amount;
+        uint ev = tokenValue * amount / (10 ** 18);
         removeFromVSupply(amount);
         removeFromVPool(ev);
         require(address(this).balance >= ev);

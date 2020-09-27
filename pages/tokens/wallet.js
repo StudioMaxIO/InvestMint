@@ -1,79 +1,98 @@
 import React, { Component } from "react";
-import { Form, Button, Input, Message, Grid } from "semantic-ui-react";
+import { Form, Button, Input, Message, Grid, Card } from "semantic-ui-react";
 import Layout from "../../components/Layout";
 import web3 from "../../ethereum/web3";
-import Token from "../../ethereum/token";
+import InvestMint from "../../ethereum/investMint";
 import { Router } from "../../routes";
 
-class TokenShow extends Component {
+class TokenWallet extends Component {
   state = {
-    reserveBlockErrorMessage: "",
-    sellTokensErrorMessage: "",
-    reserveBlockLoading: false,
-    sellTokensLoading: false,
-    tokensToSell: "",
-    tokensToTransfer: "",
-    transferToAddress: ""
+    exchangeTokensErrorMessage: "",
+    exchangeTokensLoading: false,
+    tokensToExchange: "",
+    userBalance: "",
+    exchangeButtonText: "Enter Amount to Exchange"
   };
 
   static async getInitialProps(props) {
-    //const project = Project(props.query.address);
-
-    //const summary = await project.methods.getSummary().call();
+    this._isMounted = false;
+    const imToken = InvestMint(props.query.address);
+    const summary = await imToken.methods.getSummary().call();
 
     return {
       address: props.query.address,
-      tokenName: "Token Name",
-      tokenSymbol: "TKNS",
-      userBalance: "2004.110",
-      exchangeRate: "10000503000000000",
-      blockCost: "1000000000023400000",
-      tokensPerBlock: "1000"
+      tokenName: summary[0],
+      tokenSymbol: summary[1],
+      tokensPerBlock: summary[2],
+      exchangeRate: summary[4],
+      blockCost: summary[3]
     };
   }
 
-  reserveTokenBlock = async event => {
-    event.preventDefault();
+  async componentDidMount() {
+    this._isMounted = true;
+    this._isMounted && this.loadUserData();
+  }
 
-    this.setState({ reserveBlockLoading: true, reserveBlockErrorMessage: "" });
+  componentWillUnmount() {
+    this._isMounted = false;
+  }
 
-    // try {
-    //   const accounts = await web3.eth.getAccounts();
-    //   await tokenFactory.methods
-    //     .createToken(
-    //       this.state.tokenName,
-    //       this.state.tokenSymbol,
-    //       this.state.wholeTokens,
-    //       this.state.decimals
-    //     )
-    //     .send({
-    //       from: accounts[0]
-    //     });
-    //
-    //   Router.pushRoute("/funding");
-    // } catch (err) {
-    //   this.setState({ reserveTokenErrorMessage: err.message });
-    // }
+  setExchangeValue = event => {
+    var buttonText = "Enter Amount To Exchange";
 
-    this.setState({ reserveBlockLoading: false });
-  };
-
-  sellTokens = async event => {
-    event.preventDefault();
-
-    this.setState({ sellTokensLoading: true, sellTokensErrorMessage: "" });
-    this.setState({ sellTokensLoading: false });
-  };
-
-  transferTokens = async event => {
-    event.preventDefault();
+    if (event.target.value != "") {
+      const totalExchange =
+        web3.utils.fromWei(this.props.exchangeRate, "ether") *
+        event.target.value;
+      buttonText = "Exchange for " + totalExchange + " ETH";
+    }
 
     this.setState({
-      transferTokensLoading: true,
-      transferTokensErrorMessage: ""
+      tokensToExchange: event.target.value,
+      exchangeButtonText: buttonText
     });
-    this.setState({ transferTokensLoading: false });
   };
+
+  exchangeTokens = async event => {
+    event.preventDefault();
+    this.setState({
+      exchangeTokensLoading: true,
+      exchangeTokensErrorMessage: ""
+    });
+
+    const imToken = InvestMint(this.props.address);
+
+    try {
+      if (
+        web3.utils.toWei(this.state.tokensToExchange, "ether") >
+        this.state.userBalance
+      ) {
+        this.setState({ exchangeTokenErrorMessage: "Too many tokens" });
+        throw "Value must be less than or equal to user balance.";
+      }
+      const accounts = await web3.eth.getAccounts();
+      await imToken.methods
+        .exchangeTokens(web3.utils.toWei(this.state.tokensToExchange, "ether"))
+        .send({
+          from: accounts[0]
+        });
+    } catch (err) {
+      this.setState({ exchangeTokenErrorMessage: err.message });
+    }
+
+    this.setState({ exchangeTokensLoading: false });
+    this.loadUserData();
+  };
+
+  async loadUserData() {
+    const accounts = await web3.eth.getAccounts();
+    if (accounts[0]) {
+      const imToken = InvestMint(this.props.address);
+      const ub = await imToken.methods.balanceOf(accounts[0]).call();
+      this.setState({ userBalance: ub });
+    }
+  }
 
   render() {
     return (
@@ -81,88 +100,73 @@ class TokenShow extends Component {
         <Grid>
           <Grid.Row>
             <Grid.Column>
-              <h2>
-                {this.props.tokenName} | {this.props.tokenSymbol}
-              </h2>
+              <center>
+                <Card
+                  style={{
+                    padding: "10px",
+                    textAlign: "left",
+                    fontSize: "18px"
+                  }}
+                >
+                  <h2
+                    style={{
+                      textAlign: "center"
+                    }}
+                  >
+                    {this.props.tokenName} | {this.props.tokenSymbol}
+                  </h2>
+                  <p
+                    style={{
+                      textAlign: "center",
+                      fontSize: "18px"
+                    }}
+                  >
+                    1 {this.props.tokenSymbol} ={" "}
+                    {web3.utils.fromWei(this.props.exchangeRate, "ether")} Ether
+                  </p>
+                  <p>
+                    <strong>Balance:</strong>
+                    <br />
+                    {web3.utils.fromWei(this.state.userBalance, "ether")}
+                  </p>
+                  <p>
+                    <strong>Exchange Tokens:</strong>
+                  </p>
+                  <Form
+                    onSubmit={this.exchangeTokens}
+                    error={!!this.state.exchangeTokensErrorMessage}
+                  >
+                    <Form.Field>
+                      <Input
+                        label={this.props.tokenSymbol}
+                        labelPosition="right"
+                        value={this.state.tokensToExchange}
+                        onChange={event => this.setExchangeValue(event)}
+                      />
+                    </Form.Field>
+                    <Message
+                      error
+                      header="Oops!"
+                      content={this.state.exchangeTokensErrorMessage}
+                    />
+                    <center>
+                      <Button
+                        size="large"
+                        loading={this.state.exchangeTokensLoading}
+                        color="teal"
+                      >
+                        {this.state.exchangeButtonText}
+                      </Button>
+                    </center>
+                  </Form>
+                </Card>
+              </center>
             </Grid.Column>
           </Grid.Row>
-          <Grid.Row>
-            <Grid.Column>
-              <h3>Token Address: {this.props.address}</h3>
-            </Grid.Column>
-          </Grid.Row>
-          <Grid.Row>
-            <Grid.Column width={16}>
-              <h3>
-                1 {this.props.tokenSymbol} ={" "}
-                {web3.utils.fromWei(this.props.exchangeRate, "ether")} Ether
-              </h3>
-            </Grid.Column>
-          </Grid.Row>
-          <Grid.Row>
-            <Grid.Column width={7}>
-              <h3>Sell Tokens:</h3>
-              <Form
-                onSubmit={this.sellTokens}
-                error={!!this.state.sellTokensErrorMessage}
-              >
-                <Form.Field>
-                  <Input
-                    label={this.props.tokenSymbol}
-                    labelPosition="right"
-                    value={this.state.tokensToSell}
-                    onChange={event =>
-                      this.setState({ tokensToSell: event.target.value })
-                    }
-                  />
-                </Form.Field>
-                <Message
-                  error
-                  header="Oops!"
-                  content={this.state.sellTokensErrorMessage}
-                />
-                <Button loading={this.state.sellTokensLoading} color="teal">
-                  Sell Tokens
-                </Button>
-              </Form>
-            </Grid.Column>
-          </Grid.Row>
-          <Grid.Column width={10}>
-            <h3>Transfer Tokens:</h3>
-            <p>
-              <strong>
-                Balance:&nbsp;{this.props.userBalance}&nbsp;
-                {this.props.tokenSymbol}
-              </strong>
-            </p>
-            <Form
-              onSubmit={this.transferTokens}
-              error={!!this.state.transferTokensErrorMessage}
-            >
-              <Form.Field>
-                <label>Trasfer to:</label>
-                <Input
-                  placeholder="Wallet Address: 0x..."
-                  value={this.state.tokensToTransfer}
-                  onChange={event =>
-                    this.setState({ tokensToTransfer: event.target.value })
-                  }
-                />
-              </Form.Field>
-              <Message
-                error
-                header="Oops!"
-                content={this.state.transferTokensErrorMessage}
-              />
-              <Button color="teal" loading={this.state.transferTokensLoading}>
-                Transfer
-              </Button>
-            </Form>
-          </Grid.Column>
         </Grid>
       </Layout>
     );
   }
 }
 
-export default TokenShow;
+export default TokenWallet;
