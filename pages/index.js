@@ -29,7 +29,9 @@ class Dashboard extends Component {
   render() {
     return (
       <Layout>
-        <Grid style={{ marginTop: "10px" }}>
+        <Grid
+          style={{ marginTop: "10px", marginLeft: "0px", marginRight: "0px" }}
+        >
           <Grid.Row>
             <Grid.Column color="teal">
               <Container text>
@@ -58,26 +60,36 @@ class Dashboard extends Component {
             </Grid.Column>
           </Grid.Row>
           <Grid.Row>
-            <Grid.Column>
+            <Grid.Column style={{ paddingLeft: "0px", paddingRight: "0px" }}>
               <center>
-                <Form onSubmit={this.onSubmit}>
-                  <Form.Field width={10}>
-                    <Input
-                      placeholder="InvestMint Token Address: 0x..."
-                      value={this.state.tokenAddress}
-                      onChange={event =>
-                        this.setState({ tokenAddress: event.target.value })
-                      }
-                    />
-                  </Form.Field>
-                  <Button
-                    size="huge"
-                    color="teal"
-                    loading={this.state.sellTokensLoading}
-                  >
-                    Launch Mint
-                  </Button>
-                </Form>
+                <Card
+                  fluid
+                  style={{
+                    paddingTop: "10px",
+                    paddingBottom: "20px",
+                    paddingLeft: "40px",
+                    paddingRight: "40px"
+                  }}
+                >
+                  <Form onSubmit={this.onSubmit}>
+                    <Form.Field>
+                      <Input
+                        placeholder="InvestMint Token Address: 0x..."
+                        value={this.state.tokenAddress}
+                        onChange={event =>
+                          this.setState({ tokenAddress: event.target.value })
+                        }
+                      />
+                    </Form.Field>
+                    <Button
+                      size="huge"
+                      color="teal"
+                      loading={this.state.sellTokensLoading}
+                    >
+                      Launch Mint
+                    </Button>
+                  </Form>
+                </Card>
               </center>
             </Grid.Column>
           </Grid.Row>

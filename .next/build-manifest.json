@@ -9,6 +9,10 @@
     "static/development/_ssgManifest.js"
   ],
   "pages": {
+    "/": [
+      "static/runtime/webpack.js",
+      "static/runtime/main.js"
+    ],
     "/_app": [
       "static/runtime/webpack.js",
       "static/runtime/main.js"
@@ -20,11 +24,19 @@
     "/_polyfills": [
       "static/runtime/polyfills.js"
     ],
-    "/tokens/new": [
+    "/index": [
       "static/runtime/webpack.js",
       "static/runtime/main.js"
     ],
-    "/tokens/wallet": [
+    "/load-mint": [
+      "static/runtime/webpack.js",
+      "static/runtime/main.js"
+    ],
+    "/load-wallet": [
+      "static/runtime/webpack.js",
+      "static/runtime/main.js"
+    ],
+    "/tokens/new": [
       "static/runtime/webpack.js",
       "static/runtime/main.js"
     ]
