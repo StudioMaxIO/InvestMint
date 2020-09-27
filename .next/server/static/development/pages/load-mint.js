@@ -88,7 +88,7 @@ module.exports =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 3);
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -163,7 +163,7 @@ eval("const profile = {\n  COMPANY_NAME: \"InvestMint\",\n  COMPANY_DESCRIPTION:
 
 /***/ }),
 
-/***/ 6:
+/***/ 3:
 /*!**********************************!*\
   !*** multi ./pages/load-mint.js ***!
   \**********************************/

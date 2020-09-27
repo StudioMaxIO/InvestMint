@@ -4,7 +4,7 @@ import Layout from "../../components/Layout";
 import InvestMint from "../../ethereum/investMint";
 import Token from "../../ethereum/token";
 import web3 from "../../ethereum/web3";
-import { Router } from "../../routes";
+import { Router, Link } from "../../routes";
 
 class InvestMintShow extends Component {
   state = {
@@ -345,6 +345,17 @@ class InvestMintShow extends Component {
                 </center>
               </Grid.Column>
             </Grid.Row>
+            <Grid.Row>
+              <Grid.Column>
+                <center>
+                  <Link route={"/t/" + this.props.address + "/wallet"}>
+                    <strong>
+                      <a href="">Go To Wallet</a>
+                    </strong>
+                  </Link>
+                </center>
+              </Grid.Column>
+            </Grid.Row>
           </Grid>
         </Layout>
       );
@@ -393,11 +404,6 @@ class InvestMintShow extends Component {
                       {this.state.activeReservationExpiration}
                     </p>
                     <p>
-                      <strong>Block Status: </strong>
-                      <br />
-                      {this.state.activeReservationStatus}
-                    </p>
-                    <p>
                       <strong>Tokens per Block:</strong> <br />
                       {web3.utils.fromWei(
                         this.props.tokensPerBlock,
@@ -441,6 +447,17 @@ class InvestMintShow extends Component {
                       </center>
                     </Form>
                   </Card>
+                </center>
+              </Grid.Column>
+            </Grid.Row>
+            <Grid.Row>
+              <Grid.Column>
+                <center>
+                  <Link route={"/t/" + this.props.address + "/wallet"}>
+                    <strong>
+                      <a href="">Go to wallet</a>
+                    </strong>
+                  </Link>
                 </center>
               </Grid.Column>
             </Grid.Row>

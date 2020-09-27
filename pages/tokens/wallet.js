@@ -130,7 +130,7 @@ class TokenWallet extends Component {
                     {web3.utils.fromWei(this.state.userBalance, "ether")}
                   </p>
                   <p>
-                    <strong>Exchange Tokens:</strong>
+                    <strong>Exchange:</strong>
                   </p>
                   <Form
                     onSubmit={this.exchangeTokens}
@@ -140,6 +140,7 @@ class TokenWallet extends Component {
                       <Input
                         label={this.props.tokenSymbol}
                         labelPosition="right"
+                        placeholder="# of Tokens"
                         value={this.state.tokensToExchange}
                         onChange={event => this.setExchangeValue(event)}
                       />
