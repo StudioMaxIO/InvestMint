@@ -12,8 +12,8 @@ As tokens are sold, as long as at least 1 token exists, value of all tokens will
 
 Once an InvestMint token contract has been created, anyone with the address can mint blocks for a fee and exchange them for the current value at any point. The price is always fair and if any previous blocks are canceled or expired after a subsequent block is purchased, the purchaser will receive a refund of the cost difference as if they had purchased the lowest cost unclaimed block.
 
-Reservation Fee of 1 LINK is required to reserve block of coins. Up to the full reservation fee will be refunded once the block is purchased. Half of the reservation fee may be kept in the contract depending on how many existing LINK remain in the contract at the time of purchase.
+Reservation Fee of 1 LINK is required to reserve block of coins in this test version, but this could realistically be set to about 2x the value of a single request to the node operator (presently 0.1 LINK). Up to the full reservation fee will be refunded once the block is purchased. Half of the reservation fee may be kept in the contract depending on how many existing LINK remain in the contract at the time of purchase.
 
-This current version of InvestMint is only on the Kovan test network. While this is a functioning contract and dApp, it has not been audited for security and is only a proof of concept at this stage.
+InvestMint is currently only on the Kovan test network. While this is a functioning contract and dApp, it is only a proof of concept at this stage and should not be run on mainnet without further security and testing considerations.
 
-To run locally, clone project and "npm run dev" from the root directory. A live test version can be accessed at http://investmint.herokuapp.com
+To run locally, clone project and "npm run dev" from the root directory. The live test version can be accessed at http://investmint.herokuapp.com
